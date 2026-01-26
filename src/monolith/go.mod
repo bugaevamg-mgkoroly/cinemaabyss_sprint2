@@ -1,4 +1,4 @@
-module github.com/cinemaabyss/monolith
+module monolith
 
 go 1.23
 

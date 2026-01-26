@@ -5,7 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"os/signal"
+	"syscall"
+
+	kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type Event struct {
@@ -13,33 +16,34 @@ type Event struct {
 	Data map[string]interface{} `json:"data"`
 }
 
-var producer *kafka.Produce
+var producer *kafka.Producer
 var consumer *kafka.Consumer
 
 func initKafka() {
-	// Настройка продюсера
-	producer, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "kafka:9092",
+	var err error
+
+	producer, err = kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": os.Getenv("KAFKA_BROKERS"),
 	})
 	if err != nil {
 		log.Fatal("Failed to create producer: ", err)
 	}
-	producer = producer
 
-	// Настройка потребителя
-	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":  "kafka:9092",
-		"group.id":          "events-group",
+	consumer, err = kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers": os.Getenv("KAFKA_BROKERS"),
+		"group.id":          os.Getenv("GROUP_ID"),
 		"auto.offset.reset": "earliest",
 	})
 	if err != nil {
 		log.Fatal("Failed to create consumer: ", err)
 	}
-	consumer = consumer
 
-	err = consumer.SubscribeTopics([]string{"cinemaabyss.events"}, nil)
-	if err != nil {
-		log.Fatal("Failed to subscribe: ", err)
+	topic := os.Getenv("TOPIC_NAME")
+	if topic == "" {
+		topic = "cinemaabyss.events"
+	}
+	if err := consumer.SubscribeTopics([]string{topic}, nil); err != nil {
+		log.Fatal("Failed to subscribe to topic: ", err)
 	}
 }
 
@@ -50,7 +54,7 @@ func produceEvent(eventType string, data map[string]interface{}) {
 	topic := "cinemaabyss.events"
 	err := producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:      msg,
+		Value:          msg,
 	}, nil)
 	if err != nil {
 		log.Printf("Failed to produce message: %v", err)
@@ -89,6 +93,13 @@ func eventHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	brokers := os.Getenv("KAFKA_BROKERS")
+	groupID := os.Getenv("GROUP_ID")
+
+	if brokers == "" || groupID == "" {
+		log.Fatal("KAFKA_BROKERS and GROUP_ID must be set")
+	}
+
 	initKafka()
 	go consumeEvents()
 
@@ -100,5 +111,16 @@ func main() {
 	}
 
 	log.Printf("Events service listening on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+
+	// Ожидание сигнала завершения
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
+	<-sigchan
+
+	if consumer != nil {
+		consumer.Close()
+	}
+	if producer != nil {
+		producer.Close()
+	}
 }

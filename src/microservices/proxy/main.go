@@ -27,7 +27,6 @@ func moviesHandler(w http.ResponseWriter, r *http.Request) {
 	// Решение: направить запрос в монолит или в микросервис movies
 	useMicroservice := time.Now().UnixNano()%100 < int64(migrationPercent)
 
-
 	var resp *http.Response
 	var err error
 
