@@ -81,5 +81,34 @@ jobs:
           labels: ${{ steps.meta-movies.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # Сборка и публикация образа proxy-service
+      - name: Build and push proxy-service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/microservices/proxy
+          file: ./src/microservices/proxy/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/proxy-service:latest
+            ghcr.io/${{ github.repository }}/proxy-service:${{ github.sha }}
 
+      # Сборка и публикация образа events-service
+      - name: Build and push events-service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./src/microservices/events
+          file: ./src/microservices/eventsDockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/events-service:latest
+            ghcr.io/${{ github.repository }}/events-service:${{ github.sha }}
+
+      # Запуск API-тестов
+      - name: Run API tests
+        run: |
+          cd tests/postman
+          npm install
+          npm run test:kubernetes
+        env:
+          API_URL: https://cinemaabyss.example.com
       
