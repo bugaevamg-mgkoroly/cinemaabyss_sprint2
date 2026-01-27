@@ -1,4 +1,4 @@
-FROM golang
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
@@ -15,8 +15,9 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o movies-service .
 
 # Use a smaller image for the final application
-FROM golang
+FROM alpine:latest  
 
+RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
