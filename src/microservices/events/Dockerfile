@@ -10,3 +10,4 @@ RUN go build -o events
 
 EXPOSE 8082
 CMD ["./events"]
+CMD ["node", "server.js"]

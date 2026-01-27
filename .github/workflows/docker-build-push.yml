@@ -46,8 +46,10 @@ jobs:
       - name: Test Events API
         working-directory: src/microservices/events
         run: |
-          docker run -d --name events-container -p 8082:8082 events-test
-          sleep 10
+          docker run -d --name events-container --network ci-network \
+              -p 8082:8082 \
+              events-test
+          sleep 20
           curl -f http://localhost:8082/health || exit 1
           curl -f http://localhost:8082/api/events || exit 1
           docker stop events-container
