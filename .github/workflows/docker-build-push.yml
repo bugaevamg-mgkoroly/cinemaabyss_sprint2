@@ -3,7 +3,7 @@ name: Docker Build and Push
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ cinema ]
     paths:
       - 'src/**'
       - '.github/workflows/docker-build-push.yml'
@@ -71,6 +71,35 @@ jobs:
             type=sha,format=short
             type=ref,event=branch
             latest
+            
+      # Сборка и тестирование proxy-service
+      - name: Build and Test Proxy Service
+        working-directory: ./src/microservices/proxy
+        run: |
+          docker build -t proxy-service:test .
+          docker run -d --name proxy-test \
+            -e PORT=8080 \
+            -e MONOLITH_URL=http://mock-monolith:8080 \
+            -e MOVIES_SERVICE_URL=http://mock-movies:8081 \
+            proxy-service:test
+          sleep 5
+          curl -f http://localhost:8080/health || exit 1
+          docker stop proxy-test
+          docker rm proxy-test
+
+      # Сборка и тестирование events-service
+      - name: Build and Test Events Service
+        working-directory: ./src/microservices/events
+        run: |
+          docker build -t events-service:test .
+          docker run -d --name events-test \
+            -e PORT=8082 \
+            -e KAFKA_BROKERS=mock-kafka:9092 \
+            events-service:test
+          sleep 5
+          curl -f http://localhost:8082/api/events/health || exit 1
+          docker stop events-test
+          docker rm events-test
 
       - name: Build and push Movies Service Docker image
         uses: docker/build-push-action@v4
@@ -81,5 +110,6 @@ jobs:
           labels: ${{ steps.meta-movies.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
 
       
