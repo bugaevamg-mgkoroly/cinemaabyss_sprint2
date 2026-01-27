@@ -121,11 +121,11 @@ services:
       - "8000:8000"
     environment:
       PORT: 8000
-      MONOLITH_URL: http://cinemaabyss-monolith:8080  # ← Исправлено!
+      MONOLITH_URL: http://cinemaabyss-monolith:8080  
       MOVIES_SERVICE_URL: http://cinemaabyss-movies-service:8081
       EVENTS_SERVICE_URL: http://cinemaabyss-events:8082
       GRADUAL_MIGRATION: "true"
-      MOVIES_MIGRATION_PERCENT: "50"
+      MOVIES_MIGRATION_PERCENT: "100"
     networks:
       - cinemaabyss-network
 
