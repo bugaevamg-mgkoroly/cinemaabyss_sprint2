@@ -97,7 +97,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./src/microservices/events
-          file: ./src/microservices/eventsDockerfile
+          file: ./src/microservices/events/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/events-service:latest
