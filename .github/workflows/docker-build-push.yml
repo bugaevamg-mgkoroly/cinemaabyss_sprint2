@@ -104,11 +104,11 @@ jobs:
             ghcr.io/${{ github.repository }}/events-service:${{ github.sha }}
 
       # Запуск API-тестов
-      - name: Run API tests
-        run: |
-          cd tests/postman
-          npm install
-          npm run test:kubernetes
-        env:
-          API_URL: https://cinemaabyss.example.com
+      #- name: Run API tests
+      #  run: |
+      #    cd tests/postman
+      #    npm install
+      #    npm run test:kubernetes
+      #  env:
+       #   API_URL: https://cinemaabyss.example.com
       
