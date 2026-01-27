@@ -3,22 +3,21 @@ name: Docker Build and Push
 on:
   workflow_dispatch:
   push:
-    branches: [ cinema ]
+    branches: [ main ]
     paths:
-      - 'src/**'
+      - 'src/microservices/proxy/**'
+      - 'src/microservices/events/**'
       - '.github/workflows/docker-build-push.yml'
-  release:
-    types: [published]
+  pull_request:
+    branches: [ main ]
 
 env:
   REGISTRY: ghcr.io
-  MONOLITH_IMAGE_NAME: ${{ github.repository }}/monolith
-  MOVIES_SERVICE_IMAGE_NAME: ${{ github.repository }}/movies-service
-  EVENTS_SERVICE_IMAGE_NAME: ${{ github.repository }}/events-service
-  PROXY_SERVICE_IMAGE_NAME: ${{ github.repository }}/proxy-service
+  PROXY_IMAGE: ${{ github.repository }}/proxy-service
+  EVENTS_IMAGE: ${{ github.repository }}/events-service
 
 jobs:
-  build-and-push:
+  build-and-test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,85 +30,62 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Log in to the Container registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Monolith
-        id: meta-monolith
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.MONOLITH_IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=short
-            type=ref,event=branch
-            latest
-
-      - name: Build and push Monolith Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./src/monolith
-          push: true
-          tags: ${{ steps.meta-monolith.outputs.tags }}
-          labels: ${{ steps.meta-monolith.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Extract metadata (tags, labels) for Movies Service
-        id: meta-movies
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.MOVIES_SERVICE_IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=short
-            type=ref,event=branch
-            latest
-            
-      # Сборка и тестирование proxy-service
-      - name: Build and Test Proxy Service
-        working-directory: ./src/microservices/proxy
-        run: |
-          docker build -t proxy-service:test .
-          docker run -d --name proxy-test \
-            -e PORT=8080 \
-            -e MONOLITH_URL=http://mock-monolith:8080 \
-            -e MOVIES_SERVICE_URL=http://mock-movies:8081 \
-            proxy-service:test
-          sleep 5
-          curl -f http://localhost:8080/health || exit 1
-          docker stop proxy-test
-          docker rm proxy-test
-
       # Сборка и тестирование events-service
-      - name: Build and Test Events Service
-        working-directory: ./src/microservices/events
+      - name: Build Events Service
+        working-directory: src/microservices/events
         run: |
-          docker build -t events-service:test .
-          docker run -d --name events-test \
-            -e PORT=8082 \
-            -e KAFKA_BROKERS=mock-kafka:9092 \
-            events-service:test
-          sleep 5
-          curl -f http://localhost:8082/api/events/health || exit 1
-          docker stop events-test
-          docker rm events-test
+          docker build -t events-test .
 
-      - name: Build and push Movies Service Docker image
+      - name: Test Events API
+        working-directory: src/microservices/events
+        run: |
+          docker run -d --name events-container -p 8082:8082 events-test
+          sleep 10
+          curl -f http://localhost:8082/health || exit 1
+          curl -f http://localhost:8082/api/events || exit 1
+          docker stop events-container
+
+      # Публикация образов в GHCR
+      - name: Push Proxy Image
         uses: docker/build-push-action@v4
         with:
-          context: ./src/microservices/movies
+          context: src/microservices/proxy
+          file: src/microservices/proxy/Dockerfile
+          tags: ${{ env.REGISTRY }}/${{ env.PROXY_IMAGE }}:latest
           push: true
-          tags: ${{ steps.meta-movies.outputs.tags }}
-          labels: ${{ steps.meta-movies.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
+      - name: Push Events Image
+        uses: docker/build-push-action@v4
+        with:
+          context: src/microservices/events
+          file: src/microservices/events/Dockerfile
+          tags: ${{ env.REGISTRY }}/${{ env.EVENTS_IMAGE }}:latest
+          push: true
+
+          # Сборка и тестирование proxy-service
+      - name: Build Proxy Service
+        working-directory: src/microservices/proxy
+        run: |
+          docker build -t proxy-test .
+
+      - name: Test Proxy API
+        working-directory: src/microservices/proxy
+        run: |
+          # Запуск контейнера в фоновом режиме
+          docker run -d --name proxy-container -p 8080:8080 proxy-test
+          # Ожидание старта сервиса
+          sleep 10
+          # Запуск API-тестов (пример для curl)
+          curl -f http://localhost:8000/health || exit 1
+          curl -f http://localhost:8000/api/movies || exit 1
+          # Остановка контейнера
+          docker stop proxy-container
 
       
