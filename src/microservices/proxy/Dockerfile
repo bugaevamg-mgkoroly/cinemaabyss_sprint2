@@ -1,9 +1,6 @@
 FROM golang
 
 
-RUN apk --no-cache add git ca-certificates
-
-
 WORKDIR /app
 COPY . .
 
