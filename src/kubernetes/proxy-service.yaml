@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: proxy-service
-        image: ghcr.io/your-repo/cinemaabyss:proxy-main
+        image: ghcr.io/bugaevamg/cinemaabyss/proxy-service:latest
         ports:
         - containerPort: 8000
         env:

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: event-service
-        image: ghcr.io/your-repo/cinemaabyss:events-main
+        image: ghcr.io/bugaevamg/cinemaabyss/events-service:latest
         ports:
         - containerPort: 8082
         env:
