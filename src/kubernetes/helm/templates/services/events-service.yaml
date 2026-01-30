@@ -1,4 +1,4 @@
-{{- if .Values.eventsService.enabled }}
+{{ if .Values.eventsService.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,8 +24,23 @@ spec:
         app: events-service
     spec:
       containers:
-      - name: events-service
-       .... тут
+        - name: events-service
+          image: "{{ .Values.eventsService.image.repository }}:{{ .Values.eventsService.image.tag }}"
+          imagePullPolicy: {{ .Values.eventsService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.eventsService.service.targetPort }}
+          resources:
+            limits:
+              cpu: {{ .Values.eventsService.resources.limits.cpu }}
+              memory: {{ .Values.eventsService.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.eventsService.resources.requests.cpu }}
+              memory: {{ .Values.eventsService.resources.requests.memory }}
+      imagePullSecrets:
+  {{ range .Values.imagePullSecrets }}
+  - name: {{ .name }}
+  {{ end }}
+{{ end }}
 ---
 apiVersion: v1
 kind: Service
@@ -37,5 +52,11 @@ metadata:
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
- ........ и тут
-{{- end }}
+  ports:
+    - port: {{ .Values.eventsService.service.port }}
+      targetPort: {{ .Values.eventsService.service.targetPort }}
+      protocol: TCP
+  selector:
+    app: events-service
+  type: {{ .Values.eventsService.service.type }}
+

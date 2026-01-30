@@ -33,7 +33,7 @@ database:
 monolith:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/monolith
+    repository: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/monolith
     tag: latest
     pullPolicy: Always
   replicas: 1

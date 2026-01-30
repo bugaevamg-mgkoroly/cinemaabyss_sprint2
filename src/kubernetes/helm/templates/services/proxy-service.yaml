@@ -1,4 +1,4 @@
-{{- if .Values.proxyService.enabled }}
+{{ if .Values.proxyService.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,8 +24,23 @@ spec:
         app: proxy-service
     spec:
       containers:
-      - name: proxy-service
-        ..... тут
+        - name: proxy-service
+          image: "{{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}"
+          imagePullPolicy: {{ .Values.proxyService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.proxyService.service.targetPort }}
+          resources:
+            limits:
+              cpu: {{ .Values.proxyService.resources.limits.cpu }}
+              memory: {{ .Values.proxyService.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.proxyService.resources.requests.cpu }}
+              memory: {{ .Values.proxyService.resources.requests.memory }}
+      imagePullSecrets:
+  {{ range .Values.imagePullSecrets }}
+  - name: {{ .name }}
+  {{ end }}
+{{ end }}
 ---
 apiVersion: v1
 kind: Service
@@ -37,6 +52,11 @@ metadata:
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  ports:
+    - port: {{ .Values.proxyService.service.port }}
+      targetPort: {{ .Values.proxyService.service.targetPort }}
+      protocol: TCP
   selector:
-    ... и тут
-{{- end }}
+    app: proxy-service
+  type: {{ .Values.proxyService.service.type }}
+

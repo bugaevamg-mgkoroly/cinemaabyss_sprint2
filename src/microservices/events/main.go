@@ -104,6 +104,10 @@ func main() {
 	go consumeEvents()
 
 	http.HandleFunc("/events", eventHandler)
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -112,7 +116,6 @@ func main() {
 
 	log.Printf("Events service listening on :%s", port)
 
-	// Ожидание сигнала завершения
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 	<-sigchan
