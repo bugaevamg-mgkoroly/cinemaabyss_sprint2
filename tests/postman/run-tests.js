@@ -76,7 +76,7 @@ const newmanOptions = {
   reporters: reporters,
   reporter: {
     htmlextra: {
-      export: path.join(reportsDir, `report-${argv.environment}-${new Date().toISOString().replace(/:/g, '-')}.html`),
+      export: './reports/newman-report.html',
       template: 'default',
       showOnlyFails: false,
       noSyntaxHighlighting: false,

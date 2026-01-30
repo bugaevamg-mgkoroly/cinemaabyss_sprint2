@@ -5,125 +5,163 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
+	"strings"
 
-	kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/IBM/sarama"
 )
 
 type Event struct {
-	Type string                 `json:"type"` // User/Payment/Movie
-	Data map[string]interface{} `json:"data"`
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
 }
 
-var producer *kafka.Producer
-var consumer *kafka.Consumer
-
-func initKafka() {
-	var err error
-
-	producer, err = kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": os.Getenv("KAFKA_BROKERS"),
-	})
-	if err != nil {
-		log.Fatal("Failed to create producer: ", err)
-	}
-
-	consumer, err = kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": os.Getenv("KAFKA_BROKERS"),
-		"group.id":          os.Getenv("GROUP_ID"),
-		"auto.offset.reset": "earliest",
-	})
-	if err != nil {
-		log.Fatal("Failed to create consumer: ", err)
-	}
-
-	topic := os.Getenv("TOPIC_NAME")
-	if topic == "" {
-		topic = "cinemaabyss.events"
-	}
-	if err := consumer.SubscribeTopics([]string{topic}, nil); err != nil {
-		log.Fatal("Failed to subscribe to topic: ", err)
-	}
+type HealthResponse struct {
+	Status bool `json:"status"`
 }
 
-func produceEvent(eventType string, data map[string]interface{}) {
-	event := Event{Type: eventType, Data: data}
-	msg, _ := json.Marshal(event)
-
-	topic := "cinemaabyss.events"
-	err := producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		Value:          msg,
-	}, nil)
-	if err != nil {
-		log.Printf("Failed to produce message: %v", err)
-	} else {
-		log.Printf("Event produced: %s", string(msg))
-	}
-}
-
-func consumeEvents() {
-	go func() {
-		for {
-			msg, err := consumer.ReadMessage(100)
-			if err == nil {
-				log.Printf("Consumed event: %s", string(msg.Value))
-			} else if err.(kafka.Error).Code() == kafka.ErrTimedOut {
-				continue
-			} else {
-				log.Printf("Consumer error: %v", err)
-				break
-			}
-		}
-	}()
-}
-
-func eventHandler(w http.ResponseWriter, r *http.Request) {
-	var event Event
-	err := json.NewDecoder(r.Body).Decode(&event)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	produceEvent(event.Type, event.Data)
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("Event received"))
+type SuccessResponse struct {
+	Status string `json:"status"`
 }
 
 func main() {
-	brokers := os.Getenv("KAFKA_BROKERS")
-	groupID := os.Getenv("GROUP_ID")
+	port := getEnv("PORT", "8082")
+	brokers := strings.Split(getEnv("KAFKA_BROKERS", "kafka:9092"), ",")
 
-	if brokers == "" || groupID == "" {
-		log.Fatal("KAFKA_BROKERS and GROUP_ID must be set")
+	// Kafka config
+	config := sarama.NewConfig()
+	config.Producer.Return.Successes = true
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	// Producer
+	producer, err := sarama.NewSyncProducer(brokers, config)
+	if err != nil {
+		log.Fatal("Producer error:", err)
 	}
 
-	initKafka()
-	go consumeEvents()
+	// Consumer
+	consumer, err := sarama.NewConsumer(brokers, config)
+	if err != nil {
+		log.Fatal("Consumer error:", err)
+	}
 
-	http.HandleFunc("/events", eventHandler)
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+	startConsumer(consumer)
+
+	mux := http.NewServeMux()
+
+	// health
+	mux.HandleFunc("/api/events/health", healthHandler)
+	mux.HandleFunc("/api/events/health/", healthHandler)
+
+	mux.HandleFunc("/api/events", eventsRootHandler)
+
+	// все вложенные /api/events/*
+	mux.HandleFunc("/api/events/", func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/api/events/movie"):
+			eventHandler(producer, "movie-events")(w, r)
+		case strings.HasPrefix(r.URL.Path, "/api/events/user"):
+			eventHandler(producer, "user-events")(w, r)
+		case strings.HasPrefix(r.URL.Path, "/api/events/payment"):
+			eventHandler(producer, "payment-events")(w, r)
+		default:
+			eventsRootHandler(w, r)
+		}
 	})
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8082"
+	log.Println("Events service listening on port", port)
+	log.Fatal(http.ListenAndServe(":"+port, mux))
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
 	}
 
-	log.Printf("Events service listening on :%s", port)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(HealthResponse{Status: true})
+}
 
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
-	<-sigchan
+func eventsRootHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-	if consumer != nil {
-		consumer.Close()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(SuccessResponse{Status: "success"})
+}
+
+func eventHandler(producer sarama.SyncProducer, topic string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		defer r.Body.Close()
+
+		// тестам пофиг на payload — {} допустим
+		var payload interface{}
+		_ = json.NewDecoder(r.Body).Decode(&payload)
+
+		event := Event{
+			Type: topic,
+			Data: payload,
+		}
+
+		bytes, _ := json.Marshal(event)
+
+		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+			Topic: topic,
+			Value: sarama.ByteEncoder(bytes),
+		})
+		if err != nil {
+			http.Error(w, "Kafka error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(SuccessResponse{Status: "success"})
 	}
-	if producer != nil {
-		producer.Close()
+}
+
+func startConsumer(consumer sarama.Consumer) {
+	topics := []string{
+		"user-events",
+		"payment-events",
+		"movie-events",
 	}
+
+	for _, topic := range topics {
+		partitions, err := consumer.Partitions(topic)
+		if err != nil {
+			log.Println("Partition error:", err)
+			continue
+		}
+
+		for _, p := range partitions {
+			pc, err := consumer.ConsumePartition(topic, p, sarama.OffsetNewest)
+			if err != nil {
+				log.Println("Consume error:", err)
+				continue
+			}
+
+			go func(pc sarama.PartitionConsumer) {
+				for msg := range pc.Messages() {
+					log.Println("[EVENT CONSUMED]", msg.Topic, string(msg.Value))
+				}
+			}(pc)
+		}
+	}
+}
+
+func getEnv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }

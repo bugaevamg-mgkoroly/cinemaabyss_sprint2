@@ -1,5 +1,6 @@
 {
   "devDependencies": {
-    "newman-reporter-htmlextra": "^1.22.5"
+    "newman": "^6.2.2",
+    "newman-reporter-htmlextra": "^1.23.1"
   }
 }
