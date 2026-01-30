@@ -56,7 +56,7 @@ jobs:
         run: |
           newman run \
             ./tests/postman/collection.json \
-            -e ./tests/postman/environment.json \
+            -e ./tests/postman/local.environment.json \
             -r htmlextra \
             --reporter-htmlextra-export ./test-reports/newman-report.html \
             --bail  # прерывать сборку при ошибках тестов
