@@ -1,12 +1,18 @@
 name: Docker Build and Push
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: 
+      - main
+      - cinema  
     paths:
       - 'src/**'
+      - 'tests/postman/**'  # тесты Newman
       - '.github/workflows/docker-build-push.yml'
+  pull_request:
+    branches:
+      - main
+      - cinema
   release:
     types: [published]
 
@@ -81,6 +87,7 @@ jobs:
           labels: ${{ steps.meta-movies.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
       # Сборка и публикация образа proxy-service
       - name: Build and push proxy-service
         uses: docker/build-push-action@v4
@@ -103,12 +110,4 @@ jobs:
             ghcr.io/${{ github.repository }}/events-service:latest
             ghcr.io/${{ github.repository }}/events-service:${{ github.sha }}
 
-      # Запуск API-тестов
-      #- name: Run API tests
-      #  run: |
-      #    cd tests/postman
-      #    npm install
-      #    npm run test:kubernetes
-      #  env:
-       #   API_URL: https://cinemaabyss.example.com
-      
+     
