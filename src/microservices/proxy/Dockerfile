@@ -1,5 +1,5 @@
 
-FROM alpine:latest
+FROM golang:1.23-alpine AS builder
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
