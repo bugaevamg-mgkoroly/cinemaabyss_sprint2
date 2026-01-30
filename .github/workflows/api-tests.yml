@@ -55,7 +55,7 @@ jobs:
       - name: Run API tests
         run: |
           newman run \
-            ./tests/postman/collection.json \
+            ./tests/postman/CinemaAbyss.postman_collection.json \
             -e ./tests/postman/local.environment.json \
             -r htmlextra \
             --reporter-htmlextra-export ./test-reports/newman-report.html \
