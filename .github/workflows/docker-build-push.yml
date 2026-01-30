@@ -110,4 +110,34 @@ jobs:
             ghcr.io/${{ github.repository }}/events-service:latest
             ghcr.io/${{ github.repository }}/events-service:${{ github.sha }}
 
-     
+     # Установка зависимостей для тестов
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Newman and dependencies
+        run: |
+          npm install -g newman
+          npm install newman-reporter-htmlextra --save-dev
+
+      # Запуск API-тестов
+      - name: Run API tests
+        run: |
+          newman run \
+            ./tests/postman/collection.json \
+            -e ./tests/postman/environment.json \
+            -r htmlextra \
+            --reporter-htmlextra-export ./test-reports/newman-report.html \
+            --bail  # прерывать сборку при ошибках тестов
+
+
+      # Сохранение отчёта о тестах
+      - name: Upload test report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: api-test-report
+          path: ./test-reports/
+          retention-days: 7
+      
