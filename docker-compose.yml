@@ -49,7 +49,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - cinemaabyss-network
-    healthcheck:  # Добавлено!
+    healthcheck:  
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
       timeout: 5s
