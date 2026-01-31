@@ -23,8 +23,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test(\"Status code is 200\", function () {"
+                  " console.log(\"Response status:\", pm.response.code);"
+                  " console.log(\"Response body:\", pm.response.text());"
+                  " pm.response.to.have.status(200);"
                   "});"
                 ],
                 "type": "text/javascript"
