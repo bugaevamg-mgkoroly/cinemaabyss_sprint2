@@ -754,12 +754,16 @@
                 "exec": [
                   "pm.test(\"Status code is 200\", function () {",
                   "    pm.response.to.have.status(200);",
-                  "});",
+                  "};",
                   "",
-                  "pm.test(\"Response is an array\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
-                  "});"
+                  "pm.test(\"Response is an array (only if 200)\", function () {",
+                  "    if (pm.response.code === 200) {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "    } else {",
+                  "        console.log(\"Skipping JSON check: status code is \" + pm.response.code);",
+                  "    }",
+                  "};"
                 ],
                 "type": "text/javascript"
               }
