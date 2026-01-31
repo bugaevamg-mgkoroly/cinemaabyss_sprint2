@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: monolith
-        image:  ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/monolith:latest
+        image:  ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/monolith:sha-e6e2ccb
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

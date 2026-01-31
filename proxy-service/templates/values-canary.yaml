@@ -1,0 +1,9 @@
+replicaCount: 1
+image:
+  tag: canary
+ingress:
+  hosts:
+    - host: canary.cinemaabyss.example.com
+      paths:
+        - path: /api/movies
+          pathType: Prefix

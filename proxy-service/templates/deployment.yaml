@@ -3,39 +3,26 @@ kind: Deployment
 metadata:
   name: {{ include "proxy-service.fullname" . }}
   labels:
-    {{- include "proxy-service.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "proxy-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "proxy-service.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/name: {{ include "proxy-service.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        {{- include "proxy-service.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/name: {{ include "proxy-service.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.port }}
+            - containerPort: 8080
           env:
-            {{- range $key, $value := .Values.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+            - name: PROXY_TARGET
+              value: "http://event-service-svc:3000"

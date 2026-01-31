@@ -3,13 +3,14 @@ kind: Service
 metadata:
   name: {{ include "proxy-service.fullname" . }}
   labels:
-    {{- include "proxy-service.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "proxy-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: 8080
       protocol: TCP
-      name: http
   selector:
-    {{- include "proxy-service.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "proxy-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: events-service
+  namespace: cinemaabyss
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: events-service
+  template:
+    metadata:
+      labels:
+        app: events-service
+    spec:
+      containers:
+        - name: events-service
+          image: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/events-service:e6e2ccbe4b89c4bfad1003aff5205f60223045e2
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            - name: PORT
+              value: "8082"
+            - name: KAFKA_BROKERS
+              value: "kafka:9092"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: events-service
+  namespace: cinemaabyss
+spec:
+  selector:
+    app: events-service
+  ports:
+    - port: 8082
+      targetPort: 8082

@@ -1,6 +1,6 @@
 # Образ контейнера
 image:
-  repository: ghcr.io/ваш-репозиторий/proxy
+  repository: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/proxy-service
   tag: main
   pullPolicy: IfNotPresent
 

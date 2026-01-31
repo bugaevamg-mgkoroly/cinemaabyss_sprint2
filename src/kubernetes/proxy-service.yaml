@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: proxy-service
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: proxy-service
@@ -12,49 +12,33 @@ spec:
       labels:
         app: proxy-service
     spec:
+      imagePullSecrets:
+        - name: dockerconfigsecret
       containers:
-      - name: proxy-service
-        image: ghcr.io/bugaevamg/cinemaabyss/proxy-service:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: PORT
-          value: "8000"
-        - name: MONOLITH_URL
-          value: http://monolith-svc:8080
-        - name: MOVIES_SERVICE_URL
-          value: http://movies-svc:8081
-        - name: EVENTS_SERVICE_URL
-          value: http://event-service-svc:80
-        - name: GRADUAL_MIGRATION
-          value: "true"
-        - name: MOVIES_MIGRATION_PERCENT
-          valueFrom:
-            configMapKeyRef:
-              name: app-config
-              key: MOVIES_MIGRATION_PERCENT
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 5
+        - name: proxy-service
+          image: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/proxy-service:e6e2ccbe4b89c4bfad1003aff5205f60223045e2
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: cinemaabyss-config
+            - secretRef:
+                name: cinemaabyss-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: proxy-service-svc
+  name: proxy-service
 spec:
   selector:
     app: proxy-service
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000
-  type: ClusterIP
+    - port: 8000
+      targetPort: 8000
