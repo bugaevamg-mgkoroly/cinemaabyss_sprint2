@@ -13,8 +13,8 @@
   "request": {
     "method": "GET",
     "url": {
-      "raw": "{{baseUrl}}/health",
-      "host": ["{{baseUrl}}"],
+      "raw": "{{proxyServiceUrl}}/health",
+      "host": ["{{proxyServiceUrl}}"],
       "path": ["health"]
     }
   },
@@ -23,9 +23,10 @@
       "listen": "test",
       "script": {
         "exec": [
-          "pm.test(\"Status code is 200\", function () {",
-          "    console.log(\"Response status:\", pm.response.code);",
-          "    console.log(\"Response body:\", pm.response.text());",
+          "pm.test('Status code is 200', function () {",
+          "    console.log('URL:', pm.request.url.toString());",
+          "    console.log('Response code:', pm.response.code);",
+          "    console.log('Response body:', pm.response.text());",
           "    pm.response.to.have.status(200);",
           "});"
         ],
