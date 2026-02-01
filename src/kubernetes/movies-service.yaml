@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: movies-service
-        image: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/movies-service:sha-e6e2ccb
+        image: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/movies-service
         imagePullPolicy: Always
         ports:
         - containerPort: 8081

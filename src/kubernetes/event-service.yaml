@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: events-service
-          image: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/events-service:e6e2ccbe4b89c4bfad1003aff5205f60223045e2
+          image: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/events-service:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8082
