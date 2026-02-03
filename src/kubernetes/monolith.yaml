@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: monolith
-        image:  ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/monolith
+        image:  ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/monolith:sha-667b091
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -57,7 +57,7 @@ spec:
           periodSeconds: 20
       restartPolicy: Always
       imagePullSecrets:
-        - name: dockerconfigjson
+        - name: dockerconfigsecret
 ---
 apiVersion: v1
 kind: Service

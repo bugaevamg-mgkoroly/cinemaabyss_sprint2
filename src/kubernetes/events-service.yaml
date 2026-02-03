@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-service
+  namespace: cinemaabyss
+  labels:
+    app: event-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: event-service
+  template:
+    metadata:
+      labels:
+        app: event-service
+    spec:
+      imagePullSecrets:
+        - name: dockerconfigsecret
+      containers:
+      - name: event-service
+        image: ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/events-service:667b091b992fb996540a31d344b335268d150f73
+        resources:  # <-- Добавляем эту секцию
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8082"
+        - name: KAFKA_BROKERS
+          value: kafka.cinemaabyss.svc.cluster.local:9092
+        - name: MOVIES_MIGRATION_PERCENT
+          valueFrom:
+            configMapKeyRef:
+              name: cinemaabyss-config
+              key: MOVIES_MIGRATION_PERCENT
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-service
+  namespace: cinemaabyss
+spec:
+  selector:
+    app: event-service
+  ports:
+    - port: 8082
+      targetPort: 8082

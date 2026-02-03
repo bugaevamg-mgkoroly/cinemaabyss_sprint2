@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "2"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{"deployment.kubernetes.io/revision":"2"},"creationTimestamp":"2026-02-01T18:46:32Z","generation":2,"labels":{"app":"monolith"},"name":"monolith","namespace":"cinemaabyss","resourceVersion":"43570","uid":"e1dde9fb-d99e-448e-ae18-e79f63d8eae1"},"spec":{"progressDeadlineSeconds":600,"replicas":1,"revisionHistoryLimit":10,"selector":{"matchLabels":{"app":"monolith"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"2026-02-01T22:32:19+03:00"},"labels":{"app":"monolith"}},"spec":{"containers":[{"env":[{"name":"PORT","value":"8080"},{"name":"DB_CONNECTION_STRING","value":"postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable"}],"envFrom":[{"configMapRef":{"name":"cinemaabyss-config"}},{"secretRef":{"name":"cinemaabyss-secrets"}}],"image":"ghcr.io/db-exp/cinemaabysstest/monolith:latest","imagePullPolicy":"Always","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/api/users","port":8080,"scheme":"HTTP"},"initialDelaySeconds":15,"periodSeconds":20,"successThreshold":1,"timeoutSeconds":1},"name":"monolith","ports":[{"containerPort":8080,"protocol":"TCP"}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/api/users","port":8080,"scheme":"HTTP"},"initialDelaySeconds":5,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1},"resources":{"limits":{"cpu":"500m","memory":"512Mi"},"requests":{"cpu":"100m","memory":"128Mi"}},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File"}],"dnsPolicy":"ClusterFirst","imagePullSecrets":[{"name":"dockerconfigjson"}],"restartPolicy":"Always","schedulerName":"default-scheduler","securityContext":{},"terminationGracePeriodSeconds":30}}},"status":{"conditions":[{"lastTransitionTime":"2026-02-01T18:46:32Z","lastUpdateTime":"2026-02-01T18:46:32Z","message":"Deployment does not have minimum availability.","reason":"MinimumReplicasUnavailable","status":"False","type":"Available"},{"lastTransitionTime":"2026-02-01T19:32:19Z","lastUpdateTime":"2026-02-01T19:32:19Z","message":"ReplicaSet \"monolith-65d87b9ccb\" is progressing.","reason":"ReplicaSetUpdated","status":"True","type":"Progressing"}],"observedGeneration":2,"replicas":2,"terminatingReplicas":0,"unavailableReplicas":2,"updatedReplicas":1}}
+  creationTimestamp: "2026-02-01T18:46:32Z"
+  generation: 3
+  labels:
+    app: monolith
+  name: monolith
+  namespace: cinemaabyss
+  resourceVersion: "44366"
+  uid: e1dde9fb-d99e-448e-ae18-e79f63d8eae1
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: monolith
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-02-01T22:32:19+03:00"
+      labels:
+        app: monolith
+    spec:
+      containers:
+      - env:
+        - name: PORT
+          value: "8080"
+        - name: DB_CONNECTION_STRING
+          value: postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+        envFrom:
+        - configMapRef:
+            name: cinemaabyss-config
+        - secretRef:
+            name: cinemaabyss-secrets
+        image: ghcr.io/db-exp/cinemaabysstest/monolith:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/users
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: monolith
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/users
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: dockerconfigjson
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  conditions:
+  - lastTransitionTime: "2026-02-01T18:46:32Z"
+    lastUpdateTime: "2026-02-01T18:46:32Z"
+    message: Deployment does not have minimum availability.
+    reason: MinimumReplicasUnavailable
+    status: "False"
+    type: Available
+  - lastTransitionTime: "2026-02-01T19:42:20Z"
+    lastUpdateTime: "2026-02-01T19:42:20Z"
+    message: ReplicaSet "monolith-65d87b9ccb" has timed out progressing.
+    reason: ProgressDeadlineExceeded
+    status: "False"
+    type: Progressing
+  observedGeneration: 3
+  replicas: 2
+  terminatingReplicas: 0
+  unavailableReplicas: 2
+  updatedReplicas: 1
