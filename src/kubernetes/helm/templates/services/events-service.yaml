@@ -1,62 +1,45 @@
-{{ if .Values.eventsService.enabled }}
+{{- if .Values.eventsService.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: events-service
-  namespace: {{ .Values.global.namespace }}
   labels:
     app: events-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.eventsService.replicas }}
   selector:
     matchLabels:
       app: events-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: events-service
     spec:
+      imagePullSecrets:
+        - name: dockerconfigjson
       containers:
         - name: events-service
-          image: "{{ .Values.eventsService.image.repository }}:{{ .Values.eventsService.image.tag }}"
+          image: "ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/events-service:667b091b992fb996540a31d344b335268d150f73"
           imagePullPolicy: {{ .Values.eventsService.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.eventsService.service.targetPort }}
+          envFrom:
+            - configMapRef:
+                name: cinemaabyss-config
+            - secretRef:
+                name: cinemaabyss-secrets
           resources:
-            limits:
-              cpu: {{ .Values.eventsService.resources.limits.cpu }}
-              memory: {{ .Values.eventsService.resources.limits.memory }}
-            requests:
-              cpu: {{ .Values.eventsService.resources.requests.cpu }}
-              memory: {{ .Values.eventsService.resources.requests.memory }}
-      imagePullSecrets:
-  {{ range .Values.imagePullSecrets }}
-  - name: {{ .name }}
-  {{ end }}
-{{ end }}
+            {{- toYaml .Values.eventsService.resources | nindent 12 }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: events-service
-  namespace: {{ .Values.global.namespace }}
-  labels:
-    app: events-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  type: {{ .Values.eventsService.service.type }}
+  selector:
+    app: events-service
   ports:
     - port: {{ .Values.eventsService.service.port }}
       targetPort: {{ .Values.eventsService.service.targetPort }}
-      protocol: TCP
-  selector:
-    app: events-service
-  type: {{ .Values.eventsService.service.type }}
-
+{{- end }}

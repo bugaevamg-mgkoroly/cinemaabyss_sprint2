@@ -1,62 +1,43 @@
-{{ if .Values.proxyService.enabled }}
+{{- if .Values.proxyService.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: proxy-service
-  namespace: {{ .Values.global.namespace }}
   labels:
     app: proxy-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.proxyService.replicas }}
   selector:
     matchLabels:
       app: proxy-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: proxy-service
     spec:
+      imagePullSecrets:
+        - name: dockerconfigjson
       containers:
         - name: proxy-service
-          image: "{{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}"
+          image: "ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/proxy-service:667b091b992fb996540a31d344b335268d150f73"
           imagePullPolicy: {{ .Values.proxyService.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.proxyService.service.targetPort }}
+          envFrom:
+            - configMapRef:
+                name: cinemaabyss-config
           resources:
-            limits:
-              cpu: {{ .Values.proxyService.resources.limits.cpu }}
-              memory: {{ .Values.proxyService.resources.limits.memory }}
-            requests:
-              cpu: {{ .Values.proxyService.resources.requests.cpu }}
-              memory: {{ .Values.proxyService.resources.requests.memory }}
-      imagePullSecrets:
-  {{ range .Values.imagePullSecrets }}
-  - name: {{ .name }}
-  {{ end }}
-{{ end }}
+            {{- toYaml .Values.proxyService.resources | nindent 12 }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: proxy-service
-  namespace: {{ .Values.global.namespace }}
-  labels:
-    app: proxy-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  type: {{ .Values.proxyService.service.type }}
+  selector:
+    app: proxy-service
   ports:
     - port: {{ .Values.proxyService.service.port }}
       targetPort: {{ .Values.proxyService.service.targetPort }}
-      protocol: TCP
-  selector:
-    app: proxy-service
-  type: {{ .Values.proxyService.service.type }}
-
+{{- end }}

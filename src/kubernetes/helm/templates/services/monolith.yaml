@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: monolith
-        image: {{ .Values.monolith.image.repository }}:{{ .Values.monolith.image.tag }}
+        image: "ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/monolith:sha-667b091"
         imagePullPolicy: {{ .Values.monolith.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.monolith.service.targetPort }}

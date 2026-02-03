@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: movies-service
-        image: {{ .Values.moviesService.image.repository }}:{{ .Values.moviesService.image.tag }}
+        image: "ghcr.io/bugaevamg-mgkoroly/cinemaabyss_sprint2/movies-service:sha-667b091"
         imagePullPolicy: {{ .Values.moviesService.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.moviesService.service.targetPort }}
