@@ -50,8 +50,12 @@
 - **Реализация**: сервис на Go в `./src/microservices/proxy`.  
 - **Логика**: маршрутизация через `MOVIES_MIGRATION_PERCENT`.  
 - **Тестирование**:  
-  - `curl http://localhost:8000/api/movies` — ответы от монолита/микросервиса.  
-  - Postman-тесты — все зелёные (кроме `events`).  
+  - `curl http://localhost:8000/api/movies` — ответы от монолита/микросервиса.
+<img width="775" height="373" alt="Снимок экрана 2026-02-04 в 17 42 23" src="https://github.com/user-attachments/assets/273ed621-c91b-4c7d-bed1-517a0f9f80cf" />
+
+  - Postman-тесты — все зелёные (кроме `events`).
+<img width="625" height="725" alt="Снимок экрана 2026-02-04 в 17 45 51" src="https://github.com/user-attachments/assets/d6a0158d-de9a-4caf-84dd-5894ccda8624" />
+
 
 ### 2. Kafka
  Вам как архитектуру нужно также проверить гипотезу насколько просто реализовать применение Kafka в данной архитектуре.
@@ -63,7 +67,7 @@
     - Добавьте в docker-compose новый сервис, kafka там уже есть
 
 Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
-Приложите скриншот тестов и (скриншот)[https://github.com/bugaevamg-mgkoroly/cinemaabyss_sprint2/blob/cinema/scrin/kafka.png] состояния топиков Kafka http://localhost:8090 
+Приложите скриншот тестов и [скриншот](https://github.com/bugaevamg-mgkoroly/cinemaabyss_sprint2/blob/cinema/scrin/kafka.png) состояния топиков Kafka http://localhost:8090 
 
 
 ## Задание 3
