@@ -68,6 +68,7 @@
 
 Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
 Приложите скриншот тестов и [скриншот](https://github.com/bugaevamg-mgkoroly/cinemaabyss_sprint2/blob/cinema/scrin/kafka.png) состояния топиков Kafka http://localhost:8090 
+<img width="643" height="648" alt="Снимок экрана 2026-02-04 в 17 50 50" src="https://github.com/user-attachments/assets/9f2bdb94-2458-4b6b-bba6-5a7152b0ee7b" />
 
 
 ## Задание 3
