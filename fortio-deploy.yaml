@@ -1,0 +1,196 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortio-deploy
+  namespace: cinemaabyss
+  labels:
+    app: fortio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fortio
+  template:
+    metadata:
+      labels:
+        app: fortio
+      annotations:
+        prometheus.io/path: /stats/prometheus
+        prometheus.io/port: "15020"
+        prometheus.io/scrape: "true"
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: default
+      initContainers:
+      - name: istio-init
+        image: docker.io/istio/proxyv2:1.28.3
+        args:
+        - istio-iptables
+        - -p
+        - "15001"
+        - -z
+        - "15006"
+        - -u
+        - "1337"
+        - -m
+        - REDIRECT
+        - -i
+        - "*"
+        - -x
+        - ""
+        - -b
+        - "*"
+        - -d
+        - "15090,15021,15020"
+        - --log_output_level=default:info
+        resources:
+          limits:
+            cpu: 2
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          runAsUser: 0
+
+      containers:
+      - name: fortio
+        image: fortio/fortio:latest_release
+        ports:
+        - containerPort: 8080
+          name: http-fortio
+        - containerPort: 8079
+          name: grpc-ping
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 2
+            memory: 512Mi
+
+      - name: istio-proxy
+        image: docker.io/istio/proxyv2:1.28.3
+        resources:
+          limits:
+            cpu: 2
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+        env:
+        - name: PILOT_CERT_PROVIDER
+          value: istiod
+        - name: CA_ADDR
+          value: istiod.istio-system.svc:15012
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: INSTANCE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: ISTIO_CPU_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: istio-proxy
+              resource: limits.cpu
+              divisor: 1m
+        - name: GOMEMLIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: istio-proxy
+              resource: limits.memory
+              divisor: 1
+        - name: GOMAXPROCS
+          valueFrom:
+            resourceFieldRef:
+              containerName: istio-proxy
+              resource: limits.cpu
+              divisor: 1m
+        ports:
+        - containerPort: 15090
+          name: http-envoy-prom
+        readinessProbe:
+          httpGet:
+            path: /healthz/ready
+            port: 15021
+          initialDelaySeconds: 0
+          periodSeconds: 15
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 4
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 2 && touch /var/data/envoy_reload_requested"]
+        volumeMounts:
+        - mountPath: /etc/istio/proxy
+          name: istio-envoy
+        - mountPath: /var/lib/istio/data
+          name: istio-data
+        - mountPath: /var/run/secrets/credential-uds
+          name: credential-socket
+        - mountPath: /var/run/secrets/istio
+          name: istiod-ca-cert
+        - mountPath: /var/run/secrets/tokens
+          name: istio-token
+        - mountPath: /var/run/secrets/workload-spiffe-credentials
+          name: workload-certs
+        - mountPath: /var/run/secrets/workload-spiffe-uds
+          name: workload-socket
+
+      volumes:
+      - name: istio-envoy
+        emptyDir:
+          medium: Memory
+      - name: istio-data
+        emptyDir: {}
+      - name: credential-socket
+        emptyDir: {}
+      - name: workload-socket
+        emptyDir: {}
+      - name: workload-certs
+        emptyDir: {}
+      - name: istiod-ca-cert
+        configMap:
+          name: istio-ca-root-cert
+      - name: istio-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: istio-token
+              expirationSeconds: 43200
+              audience: "istio-ca"
+      - name: kube-api-access-bpjkd
+        projected:
+          sources:
+          - serviceAccountToken:
+              expirationSeconds: 3607
+              path: token
+          - configMap:
+              name: kube-root-ca.crt
+              items:
+              - key: ca.crt
+                path: ca.crt
+          - downwardAPI:
+              items:
+              - path: "namespace"
+                fieldRef:
+                  fieldPath: metadata.namespace

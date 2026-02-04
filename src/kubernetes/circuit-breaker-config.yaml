@@ -1,0 +1,44 @@
+
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: movies-circuit-breaker
+  namespace: cinemaabyss
+spec:
+  host: movies-service.cinemaabyss.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        # Максимальное количество одновременных TCP-соединений
+        maxConnections: 5
+      http:
+        # Максимальное количество ожидающих HTTP-запросов
+        http1MaxPendingRequests: 10
+        # Ограничение на количество запросов в одном соединении
+        maxRequestsPerConnection: 1
+    outlierDetection:
+      # Сколько подряд 5xx ошибок нужно для "выброса" инстанса
+      consecutive5xxErrors: 1
+      # Интервал проверки
+      interval: 5s
+      # Время, на которое инстанс исключается из балансировки
+      baseEjectionTime: 30s
+      # Максимальный процент инстансов, которые могут быть исключены
+      maxEjectionPercent: 100
+
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: monolith-circuit-breaker
+  namespace: cinemaabyss
+spec:
+  host: monolith.cinemaabyss.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 5
+      http:
+        http1MaxPendingRequests: 10
+        maxRequestsPerConnection: 1

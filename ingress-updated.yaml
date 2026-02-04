@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    meta.helm.sh/release-name: cinemaabyss
+    meta.helm.sh/release-namespace: cinemaabyss
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  creationTimestamp: "2026-02-04T09:05:51Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/instance: cinemaabyss
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: cinemaabyss
+  name: cinemaabyss-ingress
+  namespace: cinemaabyss
+  resourceVersion: "86764"
+  uid: ce018dd5-bc8a-47c6-b837-8d23dfecb1fd
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: cinemaabyss.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: proxy-service
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+      - backend:
+          service:
+            name: events-service
+            port:
+              number: 8082
+        path: /api/events
+        pathType: Prefix
+status:
+  loadBalancer:
+    ingress:
+    - ip: 192.168.49.2
