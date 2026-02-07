@@ -430,6 +430,8 @@ You can see 21 for the upstream_rq_pending_overflow value which means 21 calls s
 ```
 
 Приложите скриншот работы circuit breaker'а
+<img width="1942" height="1244" alt="Снимок_2026-02-07_15-11-25" src="https://github.com/user-attachments/assets/58ae1b03-f84f-4b82-a503-972e2c755a08" />
+
 
 Удаляем все
 ```bash
